@@ -46,10 +46,17 @@ function main() {
   const buf = fs.readFileSync(OACT_FILE);
   const oact = parseOactBuffer(buf);
 
-  // 选取有官员且有 fee 的记录，取前 14 条
-  const picks = oact
-    .filter((o) => o.officialCount > 0 && (o.feePerPerson ?? 0) > 0)
-    .slice(0, 14);
+  // 选取有官员且有 fee 的记录。数量可由命令行第 2 个参数 / MOCK_COUNT 指定（默认 80）。
+  // 跨整个文件均匀抽样，保证类型/官员数/金额更有多样性。
+  const COUNT = parseInt(process.argv[3] || process.env.MOCK_COUNT || "80", 10);
+  const eligible = oact.filter(
+    (o) => o.officialCount > 0 && (o.feePerPerson ?? 0) > 0
+  );
+  const step = Math.max(1, Math.floor(eligible.length / COUNT));
+  const picks: typeof eligible = [];
+  for (let i = 0; i < eligible.length && picks.length < COUNT; i += step) {
+    picks.push(eligible[i]);
+  }
 
   const aoa: any[][] = [];
   aoa.push(["Legal Report"]);
