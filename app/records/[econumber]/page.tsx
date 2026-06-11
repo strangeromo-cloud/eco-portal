@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { fmtUsd, fmtDate } from "@/lib/format";
+import { useT } from "../../components/I18nProvider";
 
 type Reason = { keyword: string; field: string; category: string };
 
@@ -12,15 +13,16 @@ export default function DetailPage({
   params: { econumber: string };
 }) {
   const { econumber } = params;
+  const { t } = useT();
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`/api/records/${encodeURIComponent(econumber)}`)
       .then((r) => r.json().then((d) => ({ ok: r.ok, d })))
-      .then(({ ok, d }) => (ok ? setData(d) : setError(d.error || "加载失败")))
+      .then(({ ok, d }) => (ok ? setData(d) : setError(d.error || t("d.notFound"))))
       .catch((e) => setError(String(e)));
-  }, [econumber]);
+  }, [econumber, t]);
 
   if (error)
     return (
@@ -29,7 +31,7 @@ export default function DetailPage({
         <div className="rounded-md bg-red-50 px-4 py-3 text-red-700">{error}</div>
       </div>
     );
-  if (!data) return <div className="text-slate-400">加载中…</div>;
+  if (!data) return <div className="text-slate-400">{t("d.loading")}</div>;
 
   const { oact, concurRows, aggregate } = data;
 
@@ -42,23 +44,23 @@ export default function DetailPage({
           {oact.econumber}
         </h1>
         {aggregate.matched ? (
-          <Badge color="emerald">已关联 Concur</Badge>
+          <Badge color="emerald">{t("d.matchedConcur")}</Badge>
         ) : (
-          <Badge color="slate">未关联</Badge>
+          <Badge color="slate">{t("d.unmatched")}</Badge>
         )}
-        {aggregate.sensitive && <Badge color="red">敏感人物 ⚠</Badge>}
+        {aggregate.sensitive && <Badge color="red">{t("d.sensPerson")}</Badge>}
       </div>
 
       {/* 金额摘要 */}
       <div className="grid gap-3 sm:grid-cols-3">
-        <SummaryCard label="申请金额 (fee × 官员数)" value={fmtUsd(aggregate.appliedAmount)} />
+        <SummaryCard label={t("d.cardApplied")} value={fmtUsd(aggregate.appliedAmount)} />
         <SummaryCard
-          label="报销金额 (按明细去重和)"
+          label={t("d.cardReimbursed")}
           value={aggregate.matched ? fmtUsd(aggregate.reimbursedAmount) : "—"}
-          sub={aggregate.matched ? `${aggregate.reportCount} 笔费用明细` : "无报销"}
+          sub={aggregate.matched ? t("d.entries", { n: aggregate.reportCount }) : undefined}
         />
         <SummaryCard
-          label="Remain Value (申请 − 报销)"
+          label={t("d.cardRemain")}
           value={aggregate.matched ? fmtUsd(aggregate.remainValue) : "—"}
           highlight={aggregate.matched && aggregate.remainValue < 0 ? "red" : "blue"}
         />
@@ -67,14 +69,11 @@ export default function DetailPage({
       {/* 敏感原因汇总 */}
       {aggregate.sensitive && (
         <div className="rounded-xl border border-red-200 bg-red-50 p-4">
-          <div className="font-medium text-red-800">敏感人物判定原因</div>
+          <div className="font-medium text-red-800">{t("d.reasonTitle")}</div>
           <ul className="mt-2 space-y-1 text-sm text-red-700">
             {(aggregate.reasons as Reason[]).map((r, i) => (
               <li key={i}>
-                命中关键字 <b>「{r.keyword}」</b>
-                <span className="text-red-500">
-                  （字段：{r.field} · 类别：{r.category}）
-                </span>
+                {t("d.reasonFmt", { kw: r.keyword, field: r.field, cat: r.category })}
               </li>
             ))}
           </ul>
@@ -84,34 +83,34 @@ export default function DetailPage({
       {/* 左右对照 */}
       <div className="grid gap-5 lg:grid-cols-2">
         {/* 左：OACT */}
-        <Panel title="OACT 申请信息" tone="blue">
-          <KV k="ECONumber" v={oact.econumber} mono />
-          <KV k="申请人" v={oact.requestorName} />
-          <KV k="申请人职位" v={oact.requestorJobTitle} />
-          <KV k="部门" v={oact.requestorDepartment} />
-          <KV k="邮箱" v={oact.requestorEmail} />
-          <KV k="类型" v={oact.courtesyType} />
-          <KV k="起始 / 结束" v={`${fmtDate(oact.startDate)} ~ ${fmtDate(oact.endDate)}`} />
-          <KV k="提议人 / 职务" v={`${oact.proposerName || "—"} / ${oact.proposerTitle || "—"}`} />
-          <KV k="每人费用" v={fmtUsd(oact.feePerPerson)} />
-          <KV k="官员人数" v={String(oact.officialCount)} />
-          <KV k="申请金额" v={fmtUsd(oact.appliedAmount)} />
-          <KV k="Status" v={oact.status} />
-          <KV k="用途" v={oact.purpose} />
-          <KV k="描述/逐项金额" v={oact.itemizedDesc} />
+        <Panel title={t("d.oactPanel")} tone="blue">
+          <KV k={t("kv.econumber")} v={oact.econumber} mono />
+          <KV k={t("kv.requestor")} v={oact.requestorName} />
+          <KV k={t("kv.requestorTitle")} v={oact.requestorJobTitle} />
+          <KV k={t("kv.dept")} v={oact.requestorDepartment} />
+          <KV k={t("kv.email")} v={oact.requestorEmail} />
+          <KV k={t("kv.type")} v={oact.courtesyType} />
+          <KV k={t("kv.dates")} v={`${fmtDate(oact.startDate)} ~ ${fmtDate(oact.endDate)}`} />
+          <KV k={t("kv.proposer")} v={`${oact.proposerName || "—"} / ${oact.proposerTitle || "—"}`} />
+          <KV k={t("kv.fee")} v={fmtUsd(oact.feePerPerson)} />
+          <KV k={t("kv.officialCount")} v={String(oact.officialCount)} />
+          <KV k={t("kv.applied")} v={fmtUsd(oact.appliedAmount)} />
+          <KV k={t("kv.status")} v={oact.status} />
+          <KV k={t("kv.purpose")} v={oact.purpose} />
+          <KV k={t("kv.itemized")} v={oact.itemizedDesc} />
 
           <div className="mt-4">
             <div className="mb-1.5 text-xs font-semibold uppercase text-slate-500">
-              政府官员（{oact.officials.length}）
+              {t("d.officials")}（{oact.officials.length}）
             </div>
             <div className="overflow-x-auto rounded-md border border-slate-200">
               <table className="min-w-full text-sm">
                 <thead className="bg-slate-50 text-left text-xs text-slate-500">
                   <tr>
                     <th className="px-2 py-1.5">#</th>
-                    <th className="px-2 py-1.5">姓名</th>
-                    <th className="px-2 py-1.5">所在实体</th>
-                    <th className="px-2 py-1.5">职务</th>
+                    <th className="px-2 py-1.5">{t("ot.name")}</th>
+                    <th className="px-2 py-1.5">{t("ot.entity")}</th>
+                    <th className="px-2 py-1.5">{t("ot.title")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -122,14 +121,12 @@ export default function DetailPage({
                       <td className="px-2 py-1.5">{o.entity || "—"}</td>
                       <td className="px-2 py-1.5">
                         {o.title || "—"}
-                        {o.isSensitive && (
-                          <SensTag reasons={o.reasons as Reason[]} />
-                        )}
+                        {o.isSensitive && <SensTag reasons={o.reasons as Reason[]} />}
                       </td>
                     </tr>
                   ))}
                   {oact.officials.length === 0 && (
-                    <tr><td colSpan={4} className="px-2 py-3 text-center text-slate-400">无</td></tr>
+                    <tr><td colSpan={4} className="px-2 py-3 text-center text-slate-400">{t("d.none")}</td></tr>
                   )}
                 </tbody>
               </table>
@@ -138,10 +135,10 @@ export default function DetailPage({
         </Panel>
 
         {/* 右：Concur */}
-        <Panel title="Concur 报销信息" tone="emerald">
+        <Panel title={t("d.concurPanel")} tone="emerald">
           {!aggregate.matched ? (
             <div className="rounded-md bg-slate-50 px-3 py-6 text-center text-sm text-slate-400">
-              尚无关联的 Concur 报销记录
+              {t("d.noConcur")}
             </div>
           ) : (
             <ConcurView rows={concurRows} />
@@ -153,7 +150,7 @@ export default function DetailPage({
 }
 
 function ConcurView({ rows }: { rows: any[] }) {
-  // 按费用明细(reportId+date+approvedUsd)分组展示
+  const { t } = useT();
   const groups = new Map<string, any[]>();
   for (const r of rows) {
     const k = `${r.reportId ?? ""}|${r.transactionDate ?? ""}|${r.approvedUsd ?? 0}`;
@@ -168,26 +165,26 @@ function ConcurView({ rows }: { rows: any[] }) {
           <div key={gi} className="rounded-md border border-slate-200">
             <div className="border-b border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-600">
               <div className="flex flex-wrap gap-x-4 gap-y-1">
-                <span>报销人：<b>{head.employee || "—"}</b></span>
+                <span>{t("ct.reporter")}：<b>{head.employee || "—"}</b></span>
                 <span>Report ID：<span className="font-mono">{head.reportId || "—"}</span></span>
-                <span>交易日期：{fmtDate(head.transactionDate)}</span>
-                <span>费用类型：{head.expenseType || "—"}</span>
+                <span>{t("ct.txDate")}：{fmtDate(head.transactionDate)}</span>
+                <span>{t("ct.expType")}：{head.expenseType || "—"}</span>
               </div>
               <div className="mt-1 flex flex-wrap gap-x-4">
-                <span>明细核准金额：<b>{fmtUsd(head.approvedUsd)}</b></span>
-                <span>报告总额：{fmtUsd(head.totalReportUsd)}</span>
+                <span>{t("ct.entryAmt")}：<b>{fmtUsd(head.approvedUsd)}</b></span>
+                <span>{t("ct.reportTotal")}：{fmtUsd(head.totalReportUsd)}</span>
               </div>
               {head.businessPurpose && (
-                <div className="mt-1 text-slate-500">用途：{head.businessPurpose}</div>
+                <div className="mt-1 text-slate-500">{t("ct.purpose")}：{head.businessPurpose}</div>
               )}
             </div>
             <table className="min-w-full text-sm">
               <thead className="text-left text-xs text-slate-500">
                 <tr>
-                  <th className="px-2 py-1.5">参与人</th>
-                  <th className="px-2 py-1.5">职务</th>
-                  <th className="px-2 py-1.5">单位</th>
-                  <th className="px-2 py-1.5 text-right">人均$</th>
+                  <th className="px-2 py-1.5">{t("ct.attendee")}</th>
+                  <th className="px-2 py-1.5">{t("ct.attTitle")}</th>
+                  <th className="px-2 py-1.5">{t("ct.attCompany")}</th>
+                  <th className="px-2 py-1.5 text-right">{t("ct.perPerson")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -212,12 +209,13 @@ function ConcurView({ rows }: { rows: any[] }) {
 }
 
 function SensTag({ reasons }: { reasons: Reason[] }) {
+  const { t } = useT();
   return (
     <span
       className="ml-1.5 cursor-help rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-700"
       title={reasons.map((r) => `${r.keyword}（${r.field} · ${r.category}）`).join("\n")}
     >
-      敏感
+      {t("tag.sensitive")}
     </span>
   );
 }
@@ -299,9 +297,10 @@ function Badge({
 }
 
 function BackLink() {
+  const { t } = useT();
   return (
     <Link href="/" className="text-sm text-blue-600 hover:underline">
-      ← 返回列表
+      {t("d.back")}
     </Link>
   );
 }

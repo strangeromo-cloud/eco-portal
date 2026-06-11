@@ -2,32 +2,34 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useT } from "./I18nProvider";
 
 const tabs = [
-  { href: "/", label: "记录列表" },
-  { href: "/upload", label: "上传数据" },
+  { href: "/", key: "nav.records" },
+  { href: "/upload", key: "nav.upload" },
 ];
 
 export default function NavTabs() {
   const pathname = usePathname();
+  const { t } = useT();
   return (
     <nav className="flex items-center gap-1">
-      {tabs.map((t) => {
+      {tabs.map((tab) => {
         const active =
-          t.href === "/"
+          tab.href === "/"
             ? pathname === "/" || pathname.startsWith("/records")
-            : pathname.startsWith(t.href);
+            : pathname.startsWith(tab.href);
         return (
           <Link
-            key={t.href}
-            href={t.href}
+            key={tab.href}
+            href={tab.href}
             className={`-mb-px border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
               active
                 ? "border-blue-600 text-blue-700"
                 : "border-transparent text-slate-500 hover:text-slate-800"
             }`}
           >
-            {t.label}
+            {t(tab.key)}
           </Link>
         );
       })}

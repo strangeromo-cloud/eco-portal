@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import NavTabs from "./components/NavTabs";
-import ClearDataButton from "./components/ClearDataButton";
+import I18nProvider from "./components/I18nProvider";
+import Header from "./components/Header";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -17,21 +16,10 @@ export default function RootLayout({
   return (
     <html lang="zh-CN">
       <body>
-        <header className="border-b border-slate-200 bg-white">
-          <div className="mx-auto max-w-7xl px-6">
-            <div className="flex items-center justify-between pt-4 pb-2">
-              <Link
-                href="/"
-                className="text-lg font-semibold text-slate-900"
-              >
-                ECO 合规核查平台
-              </Link>
-              <ClearDataButton />
-            </div>
-            <NavTabs />
-          </div>
-        </header>
-        <main className="mx-auto max-w-7xl px-6 py-6">{children}</main>
+        <I18nProvider>
+          <Header />
+          <main className="mx-auto max-w-7xl px-6 py-6">{children}</main>
+        </I18nProvider>
       </body>
     </html>
   );

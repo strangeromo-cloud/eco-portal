@@ -12,6 +12,7 @@ export async function GET(req: NextRequest) {
   const to = sp.get("to");
   const matched = sp.get("matched"); // "true" | "false" | null
   const sensitive = sp.get("sensitive"); // "true" | "false" | null
+  const type = sp.get("type")?.trim(); // Gift | Entertainment | Travel（按子串匹配组合类型）
   const q = sp.get("q")?.trim();
 
   // 关联/敏感是基于 econumber↔ecoApprovalNumber 的派生集合，先取出小集合
@@ -47,6 +48,7 @@ export async function GET(req: NextRequest) {
       ],
     });
   }
+  if (type) and.push({ courtesyType: { contains: type } });
   if (matched === "true") and.push({ econumber: { in: matchedEcos } });
   if (matched === "false") and.push({ econumber: { notIn: matchedEcos } });
   if (sensitive === "true") {
