@@ -135,7 +135,6 @@ export default function ListPage() {
           <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
             <tr>
               <th className="px-3 py-2.5">ECONumber</th>
-              <th className="px-3 py-2.5">{t("col.requestor")}</th>
               <th className="px-3 py-2.5">{t("col.type")}</th>
               <th className="px-3 py-2.5">{t("col.dates")}</th>
               <th className="px-3 py-2.5 text-center">{t("col.officials")}</th>
@@ -149,10 +148,10 @@ export default function ListPage() {
           </thead>
           <tbody className="divide-y divide-slate-100">
             {loading && (
-              <tr><td colSpan={11} className="px-3 py-8 text-center text-slate-400">{t("list.loading")}</td></tr>
+              <tr><td colSpan={10} className="px-3 py-8 text-center text-slate-400">{t("list.loading")}</td></tr>
             )}
             {!loading && items.length === 0 && (
-              <tr><td colSpan={11} className="px-3 py-8 text-center text-slate-400">{t("list.empty")}</td></tr>
+              <tr><td colSpan={10} className="px-3 py-8 text-center text-slate-400">{t("list.empty")}</td></tr>
             )}
             {!loading && items.map((it) => (
               <tr key={it.econumber} className={it.sensitive ? "bg-red-50" : "hover:bg-slate-50"}>
@@ -160,10 +159,6 @@ export default function ListPage() {
                   <Link href={`/records/${it.econumber}`} className="text-blue-600 hover:underline">
                     {it.econumber}
                   </Link>
-                </td>
-                <td className="px-3 py-2.5">
-                  <div className="font-medium text-slate-800">{it.requestorName || "—"}</div>
-                  <div className="text-xs text-slate-400">{it.requestorDepartment || ""}</div>
                 </td>
                 <td className="px-3 py-2.5">{it.courtesyType || "—"}</td>
                 <td className="px-3 py-2.5 text-xs text-slate-600">
@@ -179,14 +174,14 @@ export default function ListPage() {
                     </span>
                   )}
                 </td>
-                <td className="px-3 py-2.5 text-center">
+                <td className="whitespace-nowrap px-3 py-2.5 text-center">
                   {it.matched ? (
                     <span className="rounded bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">{t("badge.matched")}</span>
                   ) : (
                     <span className="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-500">{t("badge.unmatched")}</span>
                   )}
                 </td>
-                <td className="px-3 py-2.5 text-center">
+                <td className="whitespace-nowrap px-3 py-2.5 text-center">
                   {it.sensitive ? (
                     <span
                       className="cursor-help rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700"
@@ -198,7 +193,7 @@ export default function ListPage() {
                     <span className="text-xs text-slate-300">—</span>
                   )}
                 </td>
-                <td className="px-3 py-2.5 text-right">
+                <td className="whitespace-nowrap px-3 py-2.5 text-right">
                   <Link href={`/records/${it.econumber}`} className="rounded-md border border-slate-300 px-3 py-1 text-xs text-slate-600 hover:bg-slate-50">
                     {t("btn.viewDetail")}
                   </Link>
