@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// 业务关键字（Key Words List V7）
+model Keyword {
+  id       Int    @id @default(autoincrement())
+  keyword  String
+  category String // Chinese | English | Company
+  version  String // 之前版本 | 新增
+
+  @@index([category])
+}
+
+/// 上传批次（审计 / 历史）
+model UploadBatch {
+  id        Int      @id @default(autoincrement())
+  type      String // OACT | CONCUR
+  filename  String
+  rowCount  Int
+  createdAt DateTime @default(now())
+}
+
+/// OACT 申请记录（econumber = requestID 主键语义）
+model OactRecord {
+  id        Int    @id @default(autoincrement())
+  econumber String @unique
+
+  // 申请人
+  requestorItcode     String?
+  requestorName       String?
+  requestorEmail      String?
+  requestorJobTitle   String?
+  requestorDepartment String?
+
+  courtesyType String? // Gift / Entertainment / Travel
+  startDate    DateTime?
+  endDate      DateTime?
+
+  proposedBy    String?
+  proposerName  String?
+  proposerTitle String?
+
+  feePerPerson  Float?
+  officialCount Int     @default(0)
+  appliedAmount Float   @default(0) // feePerPerson * officialCount
+  itemizedDesc  String?
+  purpose       String?
+  status        String?
+
+  isSensitive     Boolean @default(false)
+  matchedKeywords String? // JSON: 记录级命中原因（officials + 提议人职务汇总）
+  uploadBatchId   Int?
+  rawJson         String? // 完整原始行 JSON
+
+  officials OactOfficial[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([courtesyType])
+  @@index([isSensitive])
+  @@index([startDate])
+}
+
+/// OACT 中的政府官员（最多 15 人）
+model OactOfficial {
+  id           Int        @id @default(autoincrement())
+  oactRecord   OactRecord @relation(fields: [oactRecordId], references: [id], onDelete: Cascade)
+  oactRecordId Int
+  seq          Int
+  name         String?
+  entity       String?
+  title        String?
+  isSensitive  Boolean    @default(false)
+  matchedKeywords String? // JSON: [{keyword, field, category}]
+
+  @@index([oactRecordId])
+}
+
+/// Concur 报销行（每条费用明细的每个参与人一行）
+model ConcurRow {
+  id                Int       @id @default(autoincrement())
+  ecoApprovalNumber String?
+  reportId          String?
+  employee          String?
+  employeeEmail     String?
+  employeeTitle     String?
+  expenseType       String?
+  govOfficial       Boolean   @default(false)
+  attendeeName      String?
+  attendeeTitle     String?
+  companyAttendee   String?
+  attendeeApprovedUsd Float?
+  approvedUsd       Float? // 费用明细级 Approved Amount (USD)
+  totalReportUsd    Float?
+  reimbursementCurrency String?
+  transactionDate   DateTime?
+  businessPurpose   String?
+
+  isSensitive     Boolean @default(false)
+  matchedKeywords String? // JSON: [{keyword, field, category}]
+  uploadBatchId   Int?
+  rawJson         String?
+
+  createdAt DateTime @default(now())
+
+  @@index([ecoApprovalNumber])
+  @@index([reportId])
+}

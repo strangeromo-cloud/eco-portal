@@ -1,0 +1,3 @@
+{
+  "start_command": "npx prisma migrate deploy && node scripts/seedIfEmpty.mjs && npm run start"
+}

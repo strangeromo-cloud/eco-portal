@@ -1,0 +1,15 @@
+node_modules
+.next
+out
+*.db
+*.db-journal
+prisma/dev.db
+prisma/migrations/dev.db*
+.env
+mock/
+next-env.d.ts
+
+# 样例/测试数据（部署不需要）。注意：保留 "Key Words List V7 20240626.ods" 用于 seed
+ECO20251113004210350.ods
+13 Legal Report.xlsx
+09-June-2026.._.xlsx
