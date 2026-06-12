@@ -75,9 +75,9 @@ export default function ListPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-baseline gap-2">
         <h1 className="text-xl font-semibold text-slate-900">{t("list.title")}</h1>
-        <span className="text-sm text-slate-500">{t("list.total", { n: total })}</span>
+        <span className="text-xs text-slate-400">{t("list.total", { n: total })}</span>
       </div>
 
       {/* 筛选区 */}

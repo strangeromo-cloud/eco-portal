@@ -2,15 +2,28 @@
 
 import { useT } from "./I18nProvider";
 
+// 分段式语言开关：中文 | EN，当前语言高亮。
 export default function LangToggle() {
-  const { lang, setLang, t } = useT();
+  const { lang, setLang } = useT();
+  const opts: { value: "zh" | "en"; label: string }[] = [
+    { value: "zh", label: "中文" },
+    { value: "en", label: "EN" },
+  ];
   return (
-    <button
-      onClick={() => setLang(lang === "zh" ? "en" : "zh")}
-      className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
-      title={lang === "zh" ? "Switch to English" : "切换为中文"}
-    >
-      {t("lang.toggle")}
-    </button>
+    <div className="inline-flex overflow-hidden rounded-md border border-slate-300 text-xs font-medium">
+      {opts.map((o, i) => (
+        <button
+          key={o.value}
+          onClick={() => setLang(o.value)}
+          className={`px-2.5 py-1 transition-colors ${i > 0 ? "border-l border-slate-300" : ""} ${
+            lang === o.value
+              ? "bg-blue-600 text-white"
+              : "bg-white text-slate-600 hover:bg-slate-50"
+          }`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
   );
 }
