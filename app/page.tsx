@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import { fmtUsd, fmtDate } from "@/lib/format";
 import { useT } from "./components/I18nProvider";
+import DetailDrawer from "./components/DetailDrawer";
 
 type Reason = { keyword: string; field: string; category: string };
 type Item = {
@@ -30,6 +30,7 @@ export default function ListPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [selectedEco, setSelectedEco] = useState<string | null>(null);
 
   const [q, setQ] = useState("");
   const [from, setFrom] = useState("");
@@ -156,9 +157,9 @@ export default function ListPage() {
             {!loading && items.map((it) => (
               <tr key={it.econumber} className={it.sensitive ? "bg-red-50" : "hover:bg-slate-50"}>
                 <td className="px-3 py-2.5 font-mono text-xs">
-                  <Link href={`/records/${it.econumber}`} className="text-blue-600 hover:underline">
+                  <button onClick={() => setSelectedEco(it.econumber)} className="text-blue-600 hover:underline">
                     {it.econumber}
-                  </Link>
+                  </button>
                 </td>
                 <td className="px-3 py-2.5">{it.courtesyType || "—"}</td>
                 <td className="px-3 py-2.5 text-xs text-slate-600">
@@ -194,9 +195,9 @@ export default function ListPage() {
                   )}
                 </td>
                 <td className="whitespace-nowrap px-3 py-2.5 text-right">
-                  <Link href={`/records/${it.econumber}`} className="rounded-md border border-slate-300 px-3 py-1 text-xs text-slate-600 hover:bg-slate-50">
+                  <button onClick={() => setSelectedEco(it.econumber)} className="rounded-md border border-slate-300 px-3 py-1 text-xs text-slate-600 hover:bg-slate-50">
                     {t("btn.viewDetail")}
-                  </Link>
+                  </button>
                 </td>
               </tr>
             ))}
@@ -218,6 +219,8 @@ export default function ListPage() {
           </button>
         </div>
       </div>
+
+      <DetailDrawer econumber={selectedEco} onClose={() => setSelectedEco(null)} />
     </div>
   );
 }
