@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import DetailComparison from "./DetailComparison";
 import { useT } from "./I18nProvider";
 
-// 右侧滑出的详情面板。econumber 为 null 时不渲染。
+// 右侧滑出的详情面板，左边缘可拖动调整宽度。econumber 为 null 时不渲染。
 export default function DetailDrawer({
   econumber,
   onClose,
@@ -16,18 +16,48 @@ export default function DetailDrawer({
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [show, setShow] = useState(false);
+  const [width, setWidth] = useState(768); // 默认宽度（px）
+  const draggingRef = useRef(false);
 
   function handleClose() {
     setShow(false);
-    setTimeout(onClose, 300); // 等滑出动画结束再卸载
+    setTimeout(onClose, 300);
   }
+
+  // 拖动调整宽度
+  function onDragStart(e: React.MouseEvent) {
+    e.preventDefault();
+    draggingRef.current = true;
+    document.body.style.userSelect = "none";
+    document.body.style.cursor = "col-resize";
+  }
+  useEffect(() => {
+    function onMove(e: MouseEvent) {
+      if (!draggingRef.current) return;
+      const w = window.innerWidth - e.clientX; // 面板贴右，宽度=视口宽-鼠标X
+      setWidth(Math.min(Math.max(w, 380), window.innerWidth - 60));
+    }
+    function onUp() {
+      if (draggingRef.current) {
+        draggingRef.current = false;
+        document.body.style.userSelect = "";
+        document.body.style.cursor = "";
+      }
+    }
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, []);
 
   useEffect(() => {
     if (!econumber) return;
     setShow(false);
     setData(null);
     setLoading(true);
-    const raf = requestAnimationFrame(() => setShow(true)); // 触发滑入
+    const raf = requestAnimationFrame(() => setShow(true));
     fetch(`/api/records/${encodeURIComponent(econumber)}`)
       .then((r) => r.json())
       .then((d) => setData(d))
@@ -53,11 +83,21 @@ export default function DetailDrawer({
         onClick={handleClose}
       />
       <div
-        className={`absolute right-0 top-0 flex h-full w-full max-w-3xl flex-col bg-white shadow-2xl transition-transform duration-300 ${
+        style={{ width }}
+        className={`absolute right-0 top-0 flex h-full max-w-full flex-col bg-white shadow-2xl transition-transform duration-300 ${
           show ? "translate-x-0" : "translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
+        {/* 左边缘拖动手柄 */}
+        <div
+          onMouseDown={onDragStart}
+          title={t("cmp.resize")}
+          className="group absolute left-0 top-0 z-10 h-full w-1.5 cursor-col-resize border-l border-slate-200 hover:bg-blue-400/40"
+        >
+          <div className="absolute left-1/2 top-1/2 h-10 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-300 group-hover:bg-blue-500" />
+        </div>
+
+        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3 pl-6">
           <h2 className="font-mono text-sm font-semibold text-slate-700">{econumber}</h2>
           <button
             onClick={handleClose}
@@ -66,7 +106,7 @@ export default function DetailDrawer({
             ✕ {t("cmp.close")}
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-5">
+        <div className="flex-1 overflow-y-auto p-5 pl-6">
           {loading && <div className="text-slate-400">{t("d.loading")}</div>}
           {data && data.error && <div className="rounded-md bg-red-50 px-3 py-2 text-red-700">{data.error}</div>}
           {data && !data.error && <DetailComparison data={data} />}

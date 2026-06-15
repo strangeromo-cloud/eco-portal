@@ -13,3 +13,6 @@ next-env.d.ts
 ECO20251113004210350.ods
 13 Legal Report.xlsx
 09-June-2026.._.xlsx
+
+# TypeScript incremental build info
+tsconfig.tsbuildinfo

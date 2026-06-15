@@ -138,6 +138,7 @@ export const dict: Record<Lang, Record<string, string>> = {
     "cmp.applied": "申请",
     "cmp.reimbursed": "报销",
     "cmp.close": "关闭",
+    "cmp.resize": "拖动调整宽度",
   },
   en: {
     appTitle: "ECO Compliance Portal",
@@ -277,6 +278,7 @@ export const dict: Record<Lang, Record<string, string>> = {
     "cmp.applied": "Applied",
     "cmp.reimbursed": "Reimbursed",
     "cmp.close": "Close",
+    "cmp.resize": "Drag to resize",
   },
 };
 

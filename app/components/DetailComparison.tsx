@@ -104,23 +104,23 @@ export default function DetailComparison({ data }: { data: any }) {
       <div className="overflow-hidden rounded-lg border border-slate-200">
         <table className="w-full table-fixed text-sm">
           <thead className="bg-slate-50 text-left text-xs">
-            <tr>
+            <tr className="divide-x divide-slate-300">
               <th className="w-20 px-3 py-2 font-medium text-slate-500">{t("cmp.field")}</th>
-              <th className="px-3 py-2 font-semibold text-blue-700">{t("cmp.colOact")}</th>
-              <th className="px-3 py-2 font-semibold text-emerald-700">{t("cmp.colConcur")}</th>
+              <th className="bg-blue-50/60 px-3 py-2 font-semibold text-blue-700">{t("cmp.colOact")}</th>
+              <th className="bg-emerald-50/60 px-3 py-2 font-semibold text-emerald-700">{t("cmp.colConcur")}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-slate-200">
             {rows.map((r, i) => (
-              <tr key={i} className="align-top">
-                <td className="px-3 py-2 text-xs font-medium text-slate-500">{r.label}</td>
+              <tr key={i} className="divide-x divide-slate-200 align-top">
+                <td className="bg-slate-50/60 px-3 py-2 text-xs font-medium text-slate-500">{r.label}</td>
                 <td className={`break-words px-3 py-2 text-slate-800 ${r.mono ? "font-mono text-xs" : ""}`}>{val(r.oact)}</td>
                 <td className={`break-words px-3 py-2 text-slate-800 ${r.mono ? "font-mono text-xs" : ""}`}>{val(r.concur)}</td>
               </tr>
             ))}
             {/* 参与人员对比 */}
-            <tr className="align-top">
-              <td className="px-3 py-2 text-xs font-medium text-slate-500">{t("cmp.participants")}</td>
+            <tr className="divide-x divide-slate-200 align-top">
+              <td className="bg-slate-50/60 px-3 py-2 text-xs font-medium text-slate-500">{t("cmp.participants")}</td>
               <td className="px-3 py-2">
                 <PeopleList people={officials} empty={t("d.none")} />
               </td>
