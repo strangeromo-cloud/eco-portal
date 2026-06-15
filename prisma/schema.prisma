@@ -102,6 +102,7 @@ model ConcurRow {
   reimbursementCurrency String?
   transactionDate   DateTime?
   businessPurpose   String?
+  entryComments     String? // Entry Comments (X 列) —— 原因/备注
 
   isSensitive     Boolean @default(false)
   matchedKeywords String? // JSON: [{keyword, field, category}]

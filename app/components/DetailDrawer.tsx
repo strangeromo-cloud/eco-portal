@@ -16,8 +16,9 @@ export default function DetailDrawer({
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [show, setShow] = useState(false);
-  const [width, setWidth] = useState(768); // 默认宽度（px）
+  const [width, setWidth] = useState(768); // 占位，挂载后按 2/3 屏宽设置
   const draggingRef = useRef(false);
+  const userResized = useRef(false); // 用户手动拖过宽度后，不再自动重置为 2/3
 
   function handleClose() {
     setShow(false);
@@ -28,6 +29,7 @@ export default function DetailDrawer({
   function onDragStart(e: React.MouseEvent) {
     e.preventDefault();
     draggingRef.current = true;
+    userResized.current = true;
     document.body.style.userSelect = "none";
     document.body.style.cursor = "col-resize";
   }
@@ -54,6 +56,10 @@ export default function DetailDrawer({
 
   useEffect(() => {
     if (!econumber) return;
+    if (!userResized.current) {
+      // 默认打开宽度 = 2/3 屏宽（夹在 [380, 视口-60]）
+      setWidth(Math.min(Math.max(Math.round(window.innerWidth * (2 / 3)), 380), window.innerWidth - 60));
+    }
     setShow(false);
     setData(null);
     setLoading(true);

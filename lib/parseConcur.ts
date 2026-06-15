@@ -23,6 +23,7 @@ export interface ParsedConcur {
   reimbursementCurrency: string | null;
   transactionDate: Date | null;
   businessPurpose: string | null;
+  entryComments: string | null;
   rawJson: string;
 }
 
@@ -43,6 +44,7 @@ const WANT = {
   reimbursementCurrency: "Reimbursement Currency",
   transactionDate: "Transaction Date",
   businessPurpose: "Business Purpose",
+  entryComments: "Entry Comments",
 } as const;
 
 export function parseConcurBuffer(
@@ -95,6 +97,7 @@ export function parseConcurBuffer(
       reimbursementCurrency: pick(r, idx.reimbursementCurrency, str),
       transactionDate: pick(r, idx.transactionDate, toDate),
       businessPurpose: pick(r, idx.businessPurpose, str),
+      entryComments: pick(r, idx.entryComments, str),
       rawJson: JSON.stringify(rawObj),
     });
   }

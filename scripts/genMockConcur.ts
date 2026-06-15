@@ -87,6 +87,7 @@ function emitReport(opts: {
     row[20] = perAtt;
     row[21] = perAtt;
     row[22] = purpose;
+    row[23] = `原因/备注：${purpose}`; // Entry Comments (X 列)
     row[24] = "USD";
     row[25] = totalReport;
     row[26] = totalReport;

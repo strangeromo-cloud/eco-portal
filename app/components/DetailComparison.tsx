@@ -6,8 +6,8 @@ import { useT } from "./I18nProvider";
 
 type Reason = { keyword: string; field: string; category: string };
 
-// OACT 申请 与 Concur 报销逐项横向对比。
-// 多对一时：OACT 一列 + 每张报销单各一列，逐项并排对比。
+// OACP 申请 与 Concur 报销逐项横向对比。
+// 多对一时：OACP 一列 + 每张报销单各一列；OACP 列与项目列均冻结，横向滚动始终可见。
 export default function DetailComparison({ data }: { data: any }) {
   const { t } = useT();
   const oact = data.oact; // 可能为 null（孤立 Concur）
@@ -20,6 +20,11 @@ export default function DetailComparison({ data }: { data: any }) {
   const econumber = oact?.econumber ?? data.econumber;
   const uniq = (arr: any[]) => Array.from(new Set(arr.filter(Boolean)));
 
+  // 方向：Lenovo Representative=offering；Third Party/Other=receiving
+  const direction: "offering" | "receiving" | null = oact?.proposedBy
+    ? /lenovo/i.test(oact.proposedBy) ? "offering" : "receiving"
+    : null;
+
   // 按 Report ID 分组成多张报销单，每张一列
   const reportMap = new Map<string, any[]>();
   for (const r of concurRows) {
@@ -30,46 +35,66 @@ export default function DetailComparison({ data }: { data: any }) {
   const reports = Array.from(reportMap.entries()).map(([reportId, rs]) => ({
     reportId,
     employee: rs[0].employee,
+    employeeEmail: rs[0].employeeEmail,
     employeeTitle: rs[0].employeeTitle,
     expenseType: uniq(rs.map((x) => x.expenseType)).join(", "),
     txDates: uniq(rs.map((x) => fmtDate(x.transactionDate))).join(", "),
-    purpose: uniq(rs.map((x) => x.businessPurpose)).join("; "),
+    comments: uniq(rs.map((x) => x.entryComments)).join("; "),
     amount: computeReimbursed(rs),
     attendees: dedupeAttendees(rs),
   }));
-  // 未关联（有 OACT 无报销）时给一个空的 Concur 列，保持表结构
   const concurCols = reports.length > 0 ? reports : [null];
 
   const officials = hasOact
     ? (oact.officials || []).map((o: any) => ({ name: o.name, title: o.title, sub: o.entity, isSensitive: o.isSensitive, reasons: o.reasons || [] }))
     : [];
 
-  // 字段行：oact 值 + 针对每张报销单的取值函数
   const fieldRows: { label: string; oact: React.ReactNode; report: (r: any) => React.ReactNode; mono?: boolean }[] = [
     { label: t("cmp.id"), oact: oact?.econumber, report: () => econumber, mono: true },
-    { label: t("cmp.person"), oact: oact?.requestorName, report: (r) => r.employee },
+    { label: t("cmp.person"), oact: <PersonCell name={oact?.requestorName} email={oact?.requestorEmail} />, report: (r) => <PersonCell name={r.employee} email={r.employeeEmail} /> },
     { label: t("cmp.title"), oact: oact?.requestorJobTitle, report: (r) => r.employeeTitle },
     { label: t("cmp.dept"), oact: oact?.requestorDepartment, report: () => null },
     { label: t("cmp.type"), oact: oact?.courtesyType, report: (r) => r.expenseType },
     { label: t("cmp.date"), oact: `${fmtDate(oact?.startDate)} ~ ${fmtDate(oact?.endDate)}`, report: (r) => r.txDates },
     { label: t("cmp.amount"), oact: <span className="font-semibold">{fmtUsd(aggregate.appliedAmount)}</span>, report: (r) => <span className="font-semibold">{fmtUsd(r.amount)}</span> },
-    { label: t("cmp.purpose"), oact: oact?.purpose, report: (r) => r.purpose },
+    { label: t("cmp.comments"), oact: oact?.purpose, report: (r) => r.comments },
   ];
+
+  // 冻结列样式（项目列 + OACP 列）；bg 须不透明以遮住横向滚动内容
+  const fieldTh = "sticky left-0 z-20 w-24 min-w-[6rem] max-w-[6rem] bg-slate-100 px-3 py-2";
+  const fieldTd = "sticky left-0 z-10 w-24 min-w-[6rem] max-w-[6rem] bg-slate-50 px-3 py-2 text-xs font-medium text-slate-500";
+  const oactTh = "sticky left-24 z-20 min-w-[180px] bg-blue-100/80 px-3 py-2 font-semibold text-blue-700";
+  const oactTd = "sticky left-24 z-10 min-w-[180px] break-words bg-blue-50 px-3 py-2 text-slate-800";
 
   return (
     <div className="space-y-4">
-      {/* 标题 + 状态 */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="font-mono text-base font-semibold text-slate-900">{econumber}</span>
-        {isOrphan ? (
-          <Badge c="amber">{t("badge.orphan")}</Badge>
-        ) : hasConcur ? (
-          <Badge c="emerald">{t("d.matchedConcur")}</Badge>
-        ) : (
-          <Badge c="slate">{t("d.unmatched")}</Badge>
+      <div className="space-y-1.5">
+        {/* 状态 / 方向胶囊 —— 标题上方 */}
+        {hasOact && (oact.status || direction) && (
+          <div className="flex flex-wrap items-center gap-2">
+            {oact.status && <Badge c="green">{oact.status}</Badge>}
+            {direction && (
+              <Badge c={direction === "offering" ? "indigo" : "purple"}>
+                {t(direction === "offering" ? "opt.offering" : "opt.receiving")}
+              </Badge>
+            )}
+          </div>
         )}
-        {reports.length > 1 && <Badge c="blue">{t("col.reportsN", { n: reports.length })}</Badge>}
-        {aggregate.sensitive && <Badge c="red">{t("d.sensPerson")}</Badge>}
+        {/* 标题（放大） + 紧挨右侧小胶囊 */}
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="font-mono text-2xl font-bold text-slate-900">{econumber}</h2>
+          <div className="flex flex-wrap items-center gap-1">
+            {isOrphan ? (
+              <Badge c="amber" sm>{t("badge.orphan")}</Badge>
+            ) : hasConcur ? (
+              <Badge c="emerald" sm>{t("d.matchedConcur")}</Badge>
+            ) : (
+              <Badge c="slate" sm>{t("d.unmatched")}</Badge>
+            )}
+            {reports.length > 1 && <Badge c="blue" sm>{t("col.reportsN", { n: reports.length })}</Badge>}
+            {aggregate.sensitive && <Badge c="red" sm>{t("d.sensPerson")}</Badge>}
+          </div>
+        </div>
       </div>
 
       {/* 金额摘要（总额） */}
@@ -91,15 +116,15 @@ export default function DetailComparison({ data }: { data: any }) {
         </div>
       )}
 
-      {/* 横向对比表：OACT 一列 + 每张报销单一列 */}
+      {/* 横向对比表：项目列 + OACP 列冻结，报销单各一列 */}
       <div className="overflow-x-auto rounded-lg border border-slate-200">
         <table className="min-w-full text-sm">
-          <thead className="bg-slate-50 text-left text-xs">
+          <thead className="text-left text-xs">
             <tr className="divide-x divide-slate-300">
-              <th className="sticky left-0 z-10 w-24 min-w-[5rem] bg-slate-50 px-3 py-2 font-medium text-slate-500">{t("cmp.field")}</th>
-              <th className="min-w-[180px] bg-blue-50/60 px-3 py-2 font-semibold text-blue-700">{t("cmp.colOact")}</th>
+              <th className={`${fieldTh} font-medium text-slate-500`}>{t("cmp.field")}</th>
+              <th className={oactTh}>{t("cmp.colOact")}</th>
               {concurCols.map((rep, i) => (
-                <th key={i} className="min-w-[180px] bg-emerald-50/60 px-3 py-2 font-semibold text-emerald-700">
+                <th key={i} className="min-w-[180px] bg-emerald-50 px-3 py-2 font-semibold text-emerald-700">
                   {reports.length > 1 ? t("cmp.reportCol", { n: i + 1 }) : t("cmp.colConcur")}
                   {rep && <div className="font-mono text-[10px] font-normal text-slate-400">{rep.reportId}</div>}
                 </th>
@@ -109,8 +134,8 @@ export default function DetailComparison({ data }: { data: any }) {
           <tbody className="divide-y divide-slate-200">
             {fieldRows.map((fr, i) => (
               <tr key={i} className="divide-x divide-slate-200 align-top">
-                <td className="sticky left-0 z-10 bg-slate-50/95 px-3 py-2 text-xs font-medium text-slate-500">{fr.label}</td>
-                <td className={`break-words px-3 py-2 text-slate-800 ${fr.mono ? "font-mono text-xs" : ""}`}>{hasOact ? val(fr.oact) : dash}</td>
+                <td className={fieldTd}>{fr.label}</td>
+                <td className={`${oactTd} ${fr.mono ? "font-mono text-xs" : ""}`}>{hasOact ? val(fr.oact) : dash}</td>
                 {concurCols.map((rep, j) => (
                   <td key={j} className={`break-words px-3 py-2 text-slate-800 ${fr.mono ? "font-mono text-xs" : ""}`}>
                     {rep ? val(fr.report(rep)) : dash}
@@ -120,8 +145,8 @@ export default function DetailComparison({ data }: { data: any }) {
             ))}
             {/* 参与人员对比 */}
             <tr className="divide-x divide-slate-200 align-top">
-              <td className="sticky left-0 z-10 bg-slate-50/95 px-3 py-2 text-xs font-medium text-slate-500">{t("cmp.participants")}</td>
-              <td className="px-3 py-2">{hasOact ? <PeopleList people={officials} empty={t("d.none")} /> : dash}</td>
+              <td className={fieldTd}>{t("cmp.participants")}</td>
+              <td className={oactTd}>{hasOact ? <PeopleList people={officials} empty={t("d.none")} /> : dash}</td>
               {concurCols.map((rep, j) => (
                 <td key={j} className="px-3 py-2">{rep ? <PeopleList people={rep.attendees} empty={t("d.none")} /> : dash}</td>
               ))}
@@ -129,6 +154,16 @@ export default function DetailComparison({ data }: { data: any }) {
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+function PersonCell({ name, email }: { name?: string | null; email?: string | null }) {
+  if (!name && !email) return <>—</>;
+  return (
+    <div>
+      <div className="text-slate-800">{name || "—"}</div>
+      {email && <div className="break-all text-xs text-slate-400">{email}</div>}
     </div>
   );
 }
@@ -213,13 +248,17 @@ function Stat({ label, value, color }: { label: string; value: string; color?: s
   );
 }
 
-function Badge({ c, children }: { c: "emerald" | "slate" | "red" | "amber" | "blue"; children: React.ReactNode }) {
-  const map = {
+function Badge({ c, sm, children }: { c: "emerald" | "green" | "slate" | "red" | "amber" | "blue" | "indigo" | "purple"; sm?: boolean; children: React.ReactNode }) {
+  const map: Record<string, string> = {
     emerald: "bg-emerald-100 text-emerald-700",
+    green: "bg-green-100 text-green-700",
     slate: "bg-slate-100 text-slate-600",
     red: "bg-red-100 text-red-700",
     amber: "bg-amber-100 text-amber-700",
     blue: "bg-blue-100 text-blue-700",
+    indigo: "bg-indigo-100 text-indigo-700",
+    purple: "bg-purple-100 text-purple-700",
   };
-  return <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${map[c]}`}>{children}</span>;
+  const size = sm ? "px-1.5 py-0.5 text-[9px]" : "px-2.5 py-0.5 text-xs";
+  return <span className={`rounded-full font-medium ${size} ${map[c]}`}>{children}</span>;
 }

@@ -41,6 +41,7 @@ export default function ListPage() {
   const [matched, setMatched] = useState("");
   const [sensitive, setSensitive] = useState("");
   const [type, setType] = useState("");
+  const [direction, setDirection] = useState("");
 
   const load = useCallback(
     async (p: number) => {
@@ -53,6 +54,7 @@ export default function ListPage() {
       if (matched) sp.set("matched", matched);
       if (sensitive) sp.set("sensitive", sensitive);
       if (type) sp.set("type", type);
+      if (direction) sp.set("direction", direction);
       const res = await fetch(`/api/records?${sp.toString()}`);
       const data = await res.json();
       setItems(data.items || []);
@@ -61,7 +63,7 @@ export default function ListPage() {
       setTotal(data.total || 0);
       setLoading(false);
     },
-    [q, from, to, matched, sensitive, type]
+    [q, from, to, matched, sensitive, type, direction]
   );
 
   useEffect(() => {
@@ -73,7 +75,7 @@ export default function ListPage() {
     load(1);
   }
   function resetFilters() {
-    setQ(""); setFrom(""); setTo(""); setMatched(""); setSensitive(""); setType("");
+    setQ(""); setFrom(""); setTo(""); setMatched(""); setSensitive(""); setType(""); setDirection("");
     setTimeout(() => load(1), 0);
   }
 
@@ -107,6 +109,13 @@ export default function ListPage() {
             <option value="Gift">Gift</option>
             <option value="Entertainment">Entertainment</option>
             <option value="Travel">Travel</option>
+          </select>
+        </Field>
+        <Field label={t("f.direction")}>
+          <select value={direction} onChange={(e) => setDirection(e.target.value)} className="input">
+            <option value="">{t("opt.all")}</option>
+            <option value="offering">{t("opt.offering")}</option>
+            <option value="receiving">{t("opt.receiving")}</option>
           </select>
         </Field>
         <Field label={t("f.matched")}>
@@ -146,7 +155,7 @@ export default function ListPage() {
               <th className="whitespace-nowrap px-3 py-2.5 text-center">
                 {t("col.officials")}
                 <div className="text-[10px] font-normal normal-case">
-                  <span className="text-blue-600">OACT</span>
+                  <span className="text-blue-600">OACP</span>
                   <span className="text-slate-400"> / </span>
                   <span className="text-emerald-600">Concur</span>
                 </div>

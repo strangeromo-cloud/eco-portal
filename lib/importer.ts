@@ -143,6 +143,7 @@ export async function importConcur(buf: Buffer, filename: string) {
         reimbursementCurrency: row.reimbursementCurrency,
         transactionDate: row.transactionDate,
         businessPurpose: row.businessPurpose,
+        entryComments: row.entryComments,
         isSensitive: matches.length > 0,
         matchedKeywords: JSON.stringify(matches),
         uploadBatchId: batch.id,

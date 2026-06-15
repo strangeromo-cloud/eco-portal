@@ -16,15 +16,19 @@ export async function GET(req: NextRequest) {
   const matched = sp.get("matched"); // true | false | orphan
   const sensitive = sp.get("sensitive"); // true | false
   const type = sp.get("type")?.trim();
+  const direction = sp.get("direction"); // offering | receiving
   const q = sp.get("q")?.trim()?.toLowerCase();
 
   const oactRecords = await prisma.oactRecord.findMany({
     select: {
       econumber: true, requestorName: true, requestorDepartment: true,
       courtesyType: true, startDate: true, endDate: true, officialCount: true,
-      status: true, appliedAmount: true, isSensitive: true, matchedKeywords: true,
+      status: true, proposedBy: true, appliedAmount: true, isSensitive: true, matchedKeywords: true,
     },
   });
+  // 方向：Lenovo Representative=offering（联想出资/提供）；Third Party/Other=receiving（别人请我）
+  const dirOf = (proposedBy: string | null): "offering" | "receiving" | null =>
+    proposedBy ? (/lenovo/i.test(proposedBy) ? "offering" : "receiving") : null;
   const oactEcoSet = new Set(oactRecords.map((r) => r.econumber));
 
   const concur = await prisma.concurRow.findMany({
@@ -46,6 +50,7 @@ export async function GET(req: NextRequest) {
     econumber: string; kind: "oact" | "orphan"; matchStatus: "matched" | "unmatched" | "orphan";
     requestor: string | null; requestorDepartment: string | null; courtesyType: string | null;
     startDate: Date | null; endDate: Date | null; officialCount: number | null; status: string | null;
+    direction: "offering" | "receiving" | null;
     appliedAmount: number | null; reimbursedAmount: number | null; remainValue: number | null;
     reportCount: number; concurAttendeeCount: number | null; sensitive: boolean; reasons: any[];
   };
@@ -72,7 +77,7 @@ export async function GET(req: NextRequest) {
       matchStatus: matchedHas ? "matched" : "unmatched",
       requestor: r.requestorName, requestorDepartment: r.requestorDepartment,
       courtesyType: r.courtesyType, startDate: r.startDate, endDate: r.endDate,
-      officialCount: r.officialCount, status: r.status,
+      officialCount: r.officialCount, status: r.status, direction: dirOf(r.proposedBy),
       appliedAmount: r.appliedAmount,
       reimbursedAmount: matchedHas ? reimbursed : null,
       remainValue: matchedHas ? remainValue(r.appliedAmount, reimbursed) : null,
@@ -92,7 +97,7 @@ export async function GET(req: NextRequest) {
       econumber: eco, kind: "orphan", matchStatus: "orphan",
       requestor: rows[0]?.employee ?? null, requestorDepartment: null,
       courtesyType: rows[0]?.expenseType ?? null, startDate: null, endDate: null,
-      officialCount: null, status: null,
+      officialCount: null, status: null, direction: null,
       appliedAmount: null, reimbursedAmount: reimbursed, remainValue: null,
       reportCount: countReports(rows),
       concurAttendeeCount: countAttendees(rows),
@@ -119,6 +124,8 @@ export async function GET(req: NextRequest) {
   }
   if (type)
     filtered = filtered.filter((i) => (i.courtesyType ?? "").toLowerCase().includes(type.toLowerCase()));
+  if (direction === "offering") filtered = filtered.filter((i) => i.direction === "offering");
+  else if (direction === "receiving") filtered = filtered.filter((i) => i.direction === "receiving");
   if (matched === "true") filtered = filtered.filter((i) => i.matchStatus === "matched");
   else if (matched === "false") filtered = filtered.filter((i) => i.matchStatus === "unmatched");
   else if (matched === "orphan") filtered = filtered.filter((i) => i.matchStatus === "orphan");
