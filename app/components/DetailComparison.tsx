@@ -144,26 +144,66 @@ function PeopleList({ people, empty }: { people: any[]; empty: string }) {
   if (!people.length) return <span className="text-slate-400">{empty}</span>;
   return (
     <ul className="space-y-1">
-      {people.map((p, i) => (
-        <li key={i} className={`rounded px-1.5 py-1 ${p.isSensitive ? "bg-red-50" : ""}`}>
-          <div className="text-sm text-slate-800">
-            {p.name || "—"}
-            {p.isSensitive && (
-              <span
-                className="ml-1.5 rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-700"
-                title={(p.reasons as Reason[]).map((r) => `${r.keyword}（${r.field} · ${r.category}）`).join("\n")}
-              >
-                {t("tag.sensitive")}
-              </span>
+      {people.map((p, i) => {
+        const kws = ((p.reasons as Reason[]) || []).map((r) => r.keyword);
+        return (
+          <li key={i} className={`rounded px-1.5 py-1 ${p.isSensitive ? "bg-red-50" : ""}`}>
+            <div className="text-sm text-slate-800">
+              {hl(p.name || "—", kws)}
+              {p.isSensitive && (
+                <span
+                  className="ml-1.5 rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-700"
+                  title={(p.reasons as Reason[]).map((r) => `${r.keyword}（${r.field} · ${r.category}）`).join("\n")}
+                >
+                  {t("tag.sensitive")}
+                </span>
+              )}
+            </div>
+            {(p.title || p.sub) && (
+              <div className="text-xs text-slate-500">
+                {hl([p.title, p.sub].filter(Boolean).join(" · "), kws)}
+              </div>
             )}
-          </div>
-          {(p.title || p.sub) && (
-            <div className="text-xs text-slate-500">{[p.title, p.sub].filter(Boolean).join(" · ")}</div>
-          )}
-        </li>
-      ))}
+          </li>
+        );
+      })}
     </ul>
   );
+}
+
+// 把文本中命中的关键字子串标红（不区分大小写，处理重叠命中）。
+function hl(text: string | null | undefined, keywords: string[]): React.ReactNode {
+  if (!text) return text;
+  const lower = text.toLowerCase();
+  const mark = new Array(text.length).fill(false);
+  for (const raw of keywords) {
+    const kw = (raw || "").trim().toLowerCase();
+    if (!kw) continue;
+    let idx = lower.indexOf(kw);
+    while (idx !== -1) {
+      for (let i = idx; i < idx + kw.length; i++) mark[i] = true;
+      idx = lower.indexOf(kw, idx + 1);
+    }
+  }
+  if (!mark.some(Boolean)) return text;
+  const parts: React.ReactNode[] = [];
+  let i = 0;
+  while (i < text.length) {
+    const start = i;
+    const on = mark[i];
+    while (i < text.length && mark[i] === on) i++;
+    const seg = text.slice(start, i);
+    parts.push(
+      on ? (
+        <span key={start} className="rounded bg-red-100 px-0.5 font-semibold text-red-700">
+          {seg}
+        </span>
+      ) : (
+        <span key={start}>{seg}</span>
+      )
+    );
+  }
+  return <>{parts}</>;
 }
 
 function Stat({ label, value, color }: { label: string; value: string; color?: string }) {
