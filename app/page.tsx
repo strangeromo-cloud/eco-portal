@@ -8,17 +8,18 @@ import DetailDrawer from "./components/DetailDrawer";
 type Reason = { keyword: string; field: string; category: string };
 type Item = {
   econumber: string;
-  requestorName: string | null;
+  kind: "oact" | "orphan";
+  matchStatus: "matched" | "unmatched" | "orphan";
+  requestor: string | null;
   requestorDepartment: string | null;
   courtesyType: string | null;
   startDate: string | null;
   endDate: string | null;
-  officialCount: number;
+  officialCount: number | null;
   status: string | null;
-  appliedAmount: number;
+  appliedAmount: number | null;
   reimbursedAmount: number | null;
   remainValue: number | null;
-  matched: boolean;
   sensitive: boolean;
   reasons: Reason[];
 };
@@ -111,6 +112,7 @@ export default function ListPage() {
             <option value="">{t("opt.all")}</option>
             <option value="true">{t("opt.matchedYes")}</option>
             <option value="false">{t("opt.matchedNo")}</option>
+            <option value="orphan">{t("opt.matchedOrphan")}</option>
           </select>
         </Field>
         <Field label={t("f.sensitive")}>
@@ -136,6 +138,7 @@ export default function ListPage() {
           <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
             <tr>
               <th className="px-3 py-2.5">ECONumber</th>
+              <th className="px-3 py-2.5">{t("col.requestor")}</th>
               <th className="px-3 py-2.5">{t("col.type")}</th>
               <th className="px-3 py-2.5">{t("col.dates")}</th>
               <th className="px-3 py-2.5 text-center">{t("col.officials")}</th>
@@ -149,10 +152,10 @@ export default function ListPage() {
           </thead>
           <tbody className="divide-y divide-slate-100">
             {loading && (
-              <tr><td colSpan={10} className="px-3 py-8 text-center text-slate-400">{t("list.loading")}</td></tr>
+              <tr><td colSpan={11} className="px-3 py-8 text-center text-slate-400">{t("list.loading")}</td></tr>
             )}
             {!loading && items.length === 0 && (
-              <tr><td colSpan={10} className="px-3 py-8 text-center text-slate-400">{t("list.empty")}</td></tr>
+              <tr><td colSpan={11} className="px-3 py-8 text-center text-slate-400">{t("list.empty")}</td></tr>
             )}
             {!loading && items.map((it) => (
               <tr key={it.econumber} className={it.sensitive ? "bg-red-50" : "hover:bg-slate-50"}>
@@ -161,11 +164,15 @@ export default function ListPage() {
                     {it.econumber}
                   </button>
                 </td>
+                <td className="px-3 py-2.5">
+                  <div className="text-slate-800">{it.requestor || "—"}</div>
+                  {it.requestorDepartment && <div className="text-xs text-slate-400">{it.requestorDepartment}</div>}
+                </td>
                 <td className="px-3 py-2.5">{it.courtesyType || "—"}</td>
                 <td className="px-3 py-2.5 text-xs text-slate-600">
-                  {fmtDate(it.startDate)}<br />~ {fmtDate(it.endDate)}
+                  {it.startDate ? (<>{fmtDate(it.startDate)}<br />~ {fmtDate(it.endDate)}</>) : "—"}
                 </td>
-                <td className="px-3 py-2.5 text-center">{it.officialCount}</td>
+                <td className="px-3 py-2.5 text-center">{it.officialCount ?? "—"}</td>
                 <td className="px-3 py-2.5 text-right">{fmtUsd(it.appliedAmount)}</td>
                 <td className="px-3 py-2.5 text-right">{fmtUsd(it.reimbursedAmount)}</td>
                 <td className="px-3 py-2.5 text-right">
@@ -176,8 +183,10 @@ export default function ListPage() {
                   )}
                 </td>
                 <td className="whitespace-nowrap px-3 py-2.5 text-center">
-                  {it.matched ? (
+                  {it.matchStatus === "matched" ? (
                     <span className="rounded bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">{t("badge.matched")}</span>
+                  ) : it.matchStatus === "orphan" ? (
+                    <span className="rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-700">{t("badge.orphan")}</span>
                   ) : (
                     <span className="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-500">{t("badge.unmatched")}</span>
                   )}
