@@ -146,6 +146,7 @@ export const dict: Record<Lang, Record<string, string>> = {
     "cmp.reportId": "Report ID",
     "cmp.submitter": "提交人",
     "cmp.amount": "金额",
+    "cmp.reportCol": "报销单 #{n}",
   },
   en: {
     appTitle: "ECO Compliance Portal",
@@ -293,6 +294,7 @@ export const dict: Record<Lang, Record<string, string>> = {
     "cmp.reportId": "Report ID",
     "cmp.submitter": "Submitter",
     "cmp.amount": "Amount",
+    "cmp.reportCol": "Report #{n}",
   },
 };
 
