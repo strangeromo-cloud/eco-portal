@@ -32,6 +32,7 @@ export async function GET(req: NextRequest) {
     select: {
       ecoApprovalNumber: true, reportId: true, transactionDate: true, approvedUsd: true,
       isSensitive: true, matchedKeywords: true, employee: true, expenseType: true,
+      attendeeName: true,
     },
   });
   const byEco = new Map<string, typeof concur>();
@@ -46,8 +47,13 @@ export async function GET(req: NextRequest) {
     requestor: string | null; requestorDepartment: string | null; courtesyType: string | null;
     startDate: Date | null; endDate: Date | null; officialCount: number | null; status: string | null;
     appliedAmount: number | null; reimbursedAmount: number | null; remainValue: number | null;
-    sensitive: boolean; reasons: any[];
+    reportCount: number; concurAttendeeCount: number | null; sensitive: boolean; reasons: any[];
   };
+
+  const countReports = (rows: typeof concur) =>
+    new Set(rows.map((x) => x.reportId).filter(Boolean)).size;
+  const countAttendees = (rows: typeof concur) =>
+    new Set(rows.map((x) => x.attendeeName).filter(Boolean)).size;
 
   const items: Item[] = [];
 
@@ -70,6 +76,8 @@ export async function GET(req: NextRequest) {
       appliedAmount: r.appliedAmount,
       reimbursedAmount: matchedHas ? reimbursed : null,
       remainValue: matchedHas ? remainValue(r.appliedAmount, reimbursed) : null,
+      reportCount: countReports(rows),
+      concurAttendeeCount: matchedHas ? countAttendees(rows) : null,
       sensitive: r.isSensitive || concurSensitive,
       reasons,
     });
@@ -86,6 +94,8 @@ export async function GET(req: NextRequest) {
       courtesyType: rows[0]?.expenseType ?? null, startDate: null, endDate: null,
       officialCount: null, status: null,
       appliedAmount: null, reimbursedAmount: reimbursed, remainValue: null,
+      reportCount: countReports(rows),
+      concurAttendeeCount: countAttendees(rows),
       sensitive: rows.some((x) => x.isSensitive), reasons,
     });
   }

@@ -16,10 +16,12 @@ type Item = {
   startDate: string | null;
   endDate: string | null;
   officialCount: number | null;
+  concurAttendeeCount: number | null;
   status: string | null;
   appliedAmount: number | null;
   reimbursedAmount: number | null;
   remainValue: number | null;
+  reportCount: number;
   sensitive: boolean;
   reasons: Reason[];
 };
@@ -141,7 +143,14 @@ export default function ListPage() {
               <th className="px-3 py-2.5">{t("col.requestor")}</th>
               <th className="px-3 py-2.5">{t("col.type")}</th>
               <th className="px-3 py-2.5">{t("col.dates")}</th>
-              <th className="px-3 py-2.5 text-center">{t("col.officials")}</th>
+              <th className="whitespace-nowrap px-3 py-2.5 text-center">
+                {t("col.officials")}
+                <div className="text-[10px] font-normal normal-case">
+                  <span className="text-blue-600">OACT</span>
+                  <span className="text-slate-400"> / </span>
+                  <span className="text-emerald-600">Concur</span>
+                </div>
+              </th>
               <th className="px-3 py-2.5 text-right">{t("col.applied")}</th>
               <th className="px-3 py-2.5 text-right">{t("col.reimbursed")}</th>
               <th className="px-3 py-2.5 text-right">{t("col.remain")}</th>
@@ -172,9 +181,24 @@ export default function ListPage() {
                 <td className="px-3 py-2.5 text-xs text-slate-600">
                   {it.startDate ? (<>{fmtDate(it.startDate)}<br />~ {fmtDate(it.endDate)}</>) : "—"}
                 </td>
-                <td className="px-3 py-2.5 text-center">{it.officialCount ?? "—"}</td>
+                <td className="whitespace-nowrap px-3 py-2.5 text-center">
+                  <span className="text-blue-700">{it.officialCount ?? "—"}</span>
+                  <span className="text-slate-400"> / </span>
+                  <span className="text-emerald-700">{it.concurAttendeeCount ?? "—"}</span>
+                </td>
                 <td className="px-3 py-2.5 text-right">{fmtUsd(it.appliedAmount)}</td>
-                <td className="px-3 py-2.5 text-right">{fmtUsd(it.reimbursedAmount)}</td>
+                <td className="px-3 py-2.5 text-right">
+                  <div>{fmtUsd(it.reimbursedAmount)}</div>
+                  {it.reportCount > 0 && (
+                    <div
+                      className={`mt-0.5 inline-block whitespace-nowrap rounded px-1.5 text-xs ${
+                        it.reportCount > 1 ? "bg-blue-100 font-medium text-blue-700" : "text-slate-400"
+                      }`}
+                    >
+                      {t("col.reportsN", { n: it.reportCount })}
+                    </div>
+                  )}
+                </td>
                 <td className="px-3 py-2.5 text-right">
                   {it.remainValue == null ? "—" : (
                     <span className={it.remainValue < 0 ? "font-semibold text-red-600" : "text-slate-700"}>
