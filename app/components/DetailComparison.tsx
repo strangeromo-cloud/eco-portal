@@ -25,34 +25,18 @@ export default function DetailComparison({ data }: { data: any }) {
     ? /lenovo/i.test(oact.proposedBy) ? "offering" : "receiving"
     : null;
 
-  // 按 Report ID 分组：每个 Report ID = 一张报销单(一列)；组内不同记录分别列出、金额相加
-  const uniq = (arr: any[]) => Array.from(new Set(arr.filter(Boolean)));
-  const reportMap = new Map<string, any[]>();
-  for (const r of concurRows) {
-    const k = r.reportId || "—";
-    if (!reportMap.has(k)) reportMap.set(k, []);
-    reportMap.get(k)!.push(r);
-  }
-  const reports = Array.from(reportMap.entries()).map(([reportId, rs]) => {
-    const seen = new Set<string>();
-    const submitters: { name: string; email: string }[] = [];
-    for (const x of rs) {
-      const key = `${x.employee || ""}|${x.employeeEmail || ""}`;
-      if (!seen.has(key)) { seen.add(key); submitters.push({ name: x.employee, email: x.employeeEmail }); }
-    }
-    return {
-      reportId,
-      count: rs.length,
-      submitters,
-      titles: uniq(rs.map((x) => x.employeeTitle)),
-      types: uniq(rs.map((x) => x.expenseType)),
-      dates: uniq(rs.map((x) => fmtDate(x.transactionDate))),
-      comments: uniq(rs.map((x) => x.entryComments)),
-      amount: rs.reduce((s, x) => s + (x.approvedUsd ?? 0), 0),
-      breakdown: rs.map((x) => x.approvedUsd ?? 0),
-      attendees: rs.map((x: any) => ({ name: x.attendeeName, title: x.attendeeTitle, sub: x.companyAttendee, isSensitive: x.isSensitive, reasons: x.reasons || [] })),
-    };
-  });
+  // 每一条 Concur 记录 = 一列（不合并）；列头显示其 Report ID
+  const reports = concurRows.map((r: any) => ({
+    reportId: r.reportId,
+    employee: r.employee,
+    employeeEmail: r.employeeEmail,
+    employeeTitle: r.employeeTitle,
+    expenseType: r.expenseType,
+    txDates: fmtDate(r.transactionDate),
+    comments: r.entryComments,
+    amount: r.approvedUsd ?? 0,
+    attendees: [{ name: r.attendeeName, title: r.attendeeTitle, sub: r.companyAttendee, isSensitive: r.isSensitive, reasons: r.reasons || [] }],
+  }));
   const concurCols = reports.length > 0 ? reports : [null];
 
   const officials = hasOact
@@ -69,22 +53,13 @@ export default function DetailComparison({ data }: { data: any }) {
 
   const fieldRows: { label: string; oact: React.ReactNode; report: (r: any) => React.ReactNode; mono?: boolean }[] = [
     { label: t("cmp.id"), oact: oact?.econumber, report: () => econumber, mono: true },
-    { label: t("cmp.person"), oact: <PersonCell name={oact?.requestorName} email={oact?.requestorEmail} />, report: (r) => <div className="space-y-1">{r.submitters.map((s: any, i: number) => <PersonCell key={i} name={s.name} email={s.email} />)}</div> },
-    { label: t("cmp.title"), oact: oact?.requestorJobTitle, report: (r) => r.titles.join(" / ") },
+    { label: t("cmp.person"), oact: <PersonCell name={oact?.requestorName} email={oact?.requestorEmail} />, report: (r) => <PersonCell name={r.employee} email={r.employeeEmail} /> },
+    { label: t("cmp.title"), oact: oact?.requestorJobTitle, report: (r) => r.employeeTitle },
     { label: t("cmp.dept"), oact: oact?.requestorDepartment, report: () => null },
-    { label: t("cmp.type"), oact: oact?.courtesyType, report: (r) => r.types.join(", ") },
-    { label: t("cmp.date"), oact: `${fmtDate(oact?.startDate)} ~ ${fmtDate(oact?.endDate)}`, report: (r) => r.dates.join(", ") },
-    {
-      label: t("cmp.amount"),
-      oact: <span className="font-semibold">{fmtUsd(aggregate.appliedAmount)}</span>,
-      report: (r) => (
-        <div>
-          <span className="font-semibold">{fmtUsd(r.amount)}</span>
-          {r.count > 1 && <div className="text-xs font-normal text-slate-400">{r.breakdown.map((b: number) => fmtUsd(b)).join(" · ")}</div>}
-        </div>
-      ),
-    },
-    { label: t("cmp.comments"), oact: oact?.purpose, report: (r) => r.comments.join("; ") },
+    { label: t("cmp.type"), oact: oact?.courtesyType, report: (r) => r.expenseType },
+    { label: t("cmp.date"), oact: `${fmtDate(oact?.startDate)} ~ ${fmtDate(oact?.endDate)}`, report: (r) => r.txDates },
+    { label: t("cmp.amount"), oact: <span className="font-semibold">{fmtUsd(aggregate.appliedAmount)}</span>, report: (r) => <span className="font-semibold">{fmtUsd(r.amount)}</span> },
+    { label: t("cmp.comments"), oact: oact?.purpose, report: (r) => r.comments },
   ];
 
   // 冻结列样式（项目列 + OACP 列）；bg 须不透明以遮住横向滚动内容
@@ -153,12 +128,7 @@ export default function DetailComparison({ data }: { data: any }) {
               {concurCols.map((rep: any, i: number) => (
                 <th key={i} className="min-w-[180px] bg-emerald-50 px-3 py-2 font-semibold text-emerald-700">
                   <div>{reports.length > 1 ? t("cmp.reportCol", { n: i + 1 }) : t("cmp.colConcur")}</div>
-                  {rep && (
-                    <div className="font-mono text-[11px] font-normal text-slate-500">
-                      {rep.reportId}
-                      {rep.count > 1 && <span className="text-slate-400"> ×{rep.count}</span>}
-                    </div>
-                  )}
+                  {rep && <div className="font-mono text-[11px] font-normal text-slate-500">{rep.reportId}</div>}
                 </th>
               ))}
             </tr>
