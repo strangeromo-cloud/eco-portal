@@ -19,20 +19,10 @@ export interface ConcurAmountRow {
   approvedUsd?: number | null;
 }
 
+// 每行 = 一笔独立费用：所有行的 USD 金额直接相加，不去重。
 export function computeReimbursed(rows: ConcurAmountRow[]): number {
-  const seen = new Set<string>();
   let total = 0;
-  for (const r of rows) {
-    const amt = r.approvedUsd ?? 0;
-    const dateKey =
-      r.transactionDate instanceof Date
-        ? r.transactionDate.toISOString()
-        : String(r.transactionDate ?? "");
-    const key = `${r.reportId ?? ""}|${dateKey}|${amt}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    total += amt;
-  }
+  for (const r of rows) total += r.approvedUsd ?? 0;
   return round2(total);
 }
 

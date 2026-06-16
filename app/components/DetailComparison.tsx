@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { fmtUsd, fmtDate } from "@/lib/format";
-import { computeReimbursed } from "@/lib/amounts";
 import { useT } from "./I18nProvider";
 
 type Reason = { keyword: string; field: string; category: string };
@@ -20,30 +19,23 @@ export default function DetailComparison({ data }: { data: any }) {
   const isOrphan = !hasOact;
   const dash = "—";
   const econumber = oact?.econumber ?? data.econumber;
-  const uniq = (arr: any[]) => Array.from(new Set(arr.filter(Boolean)));
 
   // 方向：Lenovo Representative=offering；Third Party/Other=receiving
   const direction: "offering" | "receiving" | null = oact?.proposedBy
     ? /lenovo/i.test(oact.proposedBy) ? "offering" : "receiving"
     : null;
 
-  // 按 Report ID 分组成多张报销单，每张一列
-  const reportMap = new Map<string, any[]>();
-  for (const r of concurRows) {
-    const k = r.reportId || "—";
-    if (!reportMap.has(k)) reportMap.set(k, []);
-    reportMap.get(k)!.push(r);
-  }
-  const reports = Array.from(reportMap.entries()).map(([reportId, rs]) => ({
-    reportId,
-    employee: rs[0].employee,
-    employeeEmail: rs[0].employeeEmail,
-    employeeTitle: rs[0].employeeTitle,
-    expenseType: uniq(rs.map((x) => x.expenseType)).join(", "),
-    txDates: uniq(rs.map((x) => fmtDate(x.transactionDate))).join(", "),
-    comments: uniq(rs.map((x) => x.entryComments)).join("; "),
-    amount: computeReimbursed(rs),
-    attendees: dedupeAttendees(rs),
+  // 每一行 Concur 记录 = 一笔独立费用 = 一列（不再按 Report ID 合并）
+  const reports = concurRows.map((r: any) => ({
+    reportId: r.reportId,
+    employee: r.employee,
+    employeeEmail: r.employeeEmail,
+    employeeTitle: r.employeeTitle,
+    expenseType: r.expenseType,
+    txDates: fmtDate(r.transactionDate),
+    comments: r.entryComments,
+    amount: r.approvedUsd ?? 0,
+    attendees: [{ name: r.attendeeName, title: r.attendeeTitle, sub: r.companyAttendee, isSensitive: r.isSensitive, reasons: r.reasons || [] }],
   }));
   const concurCols = reports.length > 0 ? reports : [null];
 
@@ -133,7 +125,7 @@ export default function DetailComparison({ data }: { data: any }) {
             <tr className="divide-x divide-slate-300">
               <th className={`${fieldTh} font-medium text-slate-500`}>{t("cmp.field")}</th>
               <th className={oactTh}>{t("cmp.colOact")}</th>
-              {concurCols.map((rep, i) => (
+              {concurCols.map((rep: any, i: number) => (
                 <th key={i} className="min-w-[180px] bg-emerald-50 px-3 py-2 font-semibold text-emerald-700">
                   {reports.length > 1 ? t("cmp.reportCol", { n: i + 1 }) : t("cmp.colConcur")}
                   {rep && <div className="font-mono text-[10px] font-normal text-slate-400">{rep.reportId}</div>}
@@ -146,7 +138,7 @@ export default function DetailComparison({ data }: { data: any }) {
               <tr key={i} className="divide-x divide-slate-200 align-top">
                 <td className={fieldTd}>{fr.label}</td>
                 <td className={`${oactTd} ${fr.mono ? "font-mono text-xs" : ""}`}>{hasOact ? val(fr.oact) : dash}</td>
-                {concurCols.map((rep, j) => (
+                {concurCols.map((rep: any, j: number) => (
                   <td key={j} className={`break-words px-3 py-2 text-slate-800 ${fr.mono ? "font-mono text-xs" : ""}`}>
                     {rep ? val(fr.report(rep)) : dash}
                   </td>
@@ -157,7 +149,7 @@ export default function DetailComparison({ data }: { data: any }) {
             <tr className="divide-x divide-slate-200 align-top">
               <td className={fieldTd}>{t("cmp.participants")}</td>
               <td className={oactTd}>{hasOact ? <PeopleList people={officials} empty={t("d.none")} /> : dash}</td>
-              {concurCols.map((rep, j) => (
+              {concurCols.map((rep: any, j: number) => (
                 <td key={j} className="px-3 py-2">{rep ? <PeopleList people={rep.attendees} empty={t("d.none")} /> : dash}</td>
               ))}
             </tr>
@@ -210,21 +202,6 @@ function PersonCell({ name, email }: { name?: string | null; email?: string | nu
       {email && <div className="break-all text-xs text-slate-400">{email}</div>}
     </div>
   );
-}
-
-function dedupeAttendees(rows: any[]) {
-  const attMap = new Map<string, any>();
-  for (const r of rows) {
-    const name = r.attendeeName || "—";
-    const key = `${name}|${r.attendeeTitle || ""}`;
-    const ex = attMap.get(key);
-    if (!ex) attMap.set(key, { name, title: r.attendeeTitle, sub: r.companyAttendee, isSensitive: r.isSensitive, reasons: r.reasons || [] });
-    else if (r.isSensitive) {
-      ex.isSensitive = true;
-      ex.reasons = [...ex.reasons, ...(r.reasons || [])];
-    }
-  }
-  return Array.from(attMap.values());
 }
 
 function val(v: React.ReactNode) {

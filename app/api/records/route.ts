@@ -55,8 +55,8 @@ export async function GET(req: NextRequest) {
     reportCount: number; concurAttendeeCount: number | null; sensitive: boolean; reasons: any[];
   };
 
-  const countReports = (rows: typeof concur) =>
-    new Set(rows.map((x) => x.reportId).filter(Boolean)).size;
+  // 每行 = 一笔独立费用记录
+  const countReports = (rows: typeof concur) => rows.length;
   const countAttendees = (rows: typeof concur) =>
     new Set(rows.map((x) => x.attendeeName).filter(Boolean)).size;
 
