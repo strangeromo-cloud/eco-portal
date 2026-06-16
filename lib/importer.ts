@@ -64,6 +64,7 @@ export async function importOact(buf: Buffer, filename: string) {
       status: r.status,
       isSensitive,
       matchedKeywords: JSON.stringify(recordReasons),
+      extrasJson: JSON.stringify(r.extras),
       uploadBatchId: batch.id,
       rawJson: r.rawJson,
     };

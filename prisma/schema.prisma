@@ -55,6 +55,7 @@ model OactRecord {
 
   isSensitive     Boolean @default(false)
   matchedKeywords String? // JSON: 记录级命中原因（officials + 提议人职务汇总）
+  extrasJson      String? // JSON: 其他已填列 [{label,value}]，详情"展开更多"用
   uploadBatchId   Int?
   rawJson         String? // 完整原始行 JSON
 

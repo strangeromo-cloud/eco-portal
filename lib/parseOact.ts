@@ -56,8 +56,13 @@ export interface ParsedOact {
   status: string | null;
   officials: ParsedOfficial[];
   officialCount: number;
+  extras: { key: string; label: string; value: string }[]; // 其他已填列（key 供前端翻译，label 为原表头兜底）
   rawJson: string;
 }
+
+// 详情"展开更多"里要显示的其他列（排除已展示字段与官员区 12..56）。
+// label 用原始表头文本，自带说明、稳健。
+const EXTRA_COLS = [1, 10, 11, 57, 58, 60, 61, 62, 63, 64, 66, 67, 68, 69];
 
 export function parseOactBuffer(buf: Buffer): ParsedOact[] {
   const wb = readWorkbook(buf);
@@ -94,6 +99,13 @@ export function parseOactBuffer(buf: Buffer): ParsedOact[] {
       rawObj[header[c] || `col${c}`] = v instanceof Date ? v.toISOString() : v;
     }
 
+    // 其他已填列（用原始表头作标签，仅保留非空）
+    const extras: { key: string; label: string; value: string }[] = [];
+    for (const c of EXTRA_COLS) {
+      const v = str(r[c]);
+      if (v) extras.push({ key: `ex.${c}`, label: header[c] || `col${c}`, value: v });
+    }
+
     out.push({
       econumber,
       requestorItcode: str(r[OACT_COL.requestorItcode]),
@@ -113,6 +125,7 @@ export function parseOactBuffer(buf: Buffer): ParsedOact[] {
       status: str(r[OACT_COL.status]),
       officials,
       officialCount: officials.length,
+      extras,
       rawJson: JSON.stringify(rawObj),
     });
   }

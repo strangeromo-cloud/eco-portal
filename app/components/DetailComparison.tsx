@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { fmtUsd, fmtDate } from "@/lib/format";
 import { computeReimbursed } from "@/lib/amounts";
 import { useT } from "./I18nProvider";
@@ -10,6 +11,7 @@ type Reason = { keyword: string; field: string; category: string };
 // 多对一时：OACP 一列 + 每张报销单各一列；OACP 列与项目列均冻结，横向滚动始终可见。
 export default function DetailComparison({ data }: { data: any }) {
   const { t } = useT();
+  const [showMore, setShowMore] = useState(false);
   const oact = data.oact; // 可能为 null（孤立 Concur）
   const concurRows = data.concurRows || [];
   const aggregate = data.aggregate;
@@ -48,6 +50,14 @@ export default function DetailComparison({ data }: { data: any }) {
   const officials = hasOact
     ? (oact.officials || []).map((o: any) => ({ name: o.name, title: o.title, sub: o.entity, isSensitive: o.isSensitive, reasons: o.reasons || [] }))
     : [];
+
+  // 其他已填列（默认折叠）
+  let extras: { key?: string; label: string; value: string }[] = [];
+  try {
+    extras = oact?.extrasJson ? JSON.parse(oact.extrasJson) : [];
+  } catch {
+    extras = [];
+  }
 
   const fieldRows: { label: string; oact: React.ReactNode; report: (r: any) => React.ReactNode; mono?: boolean }[] = [
     { label: t("cmp.id"), oact: oact?.econumber, report: () => econumber, mono: true },
@@ -154,6 +164,40 @@ export default function DetailComparison({ data }: { data: any }) {
           </tbody>
         </table>
       </div>
+
+      {/* 更多申请信息（其他已填列，默认折叠） */}
+      {extras.length > 0 && (
+        <div>
+          <button
+            onClick={() => setShowMore((v) => !v)}
+            className="flex w-full items-center justify-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-blue-600 hover:bg-slate-100"
+          >
+            <span>{showMore ? t("cmp.showLess") : t("cmp.showMore", { n: extras.length })}</span>
+            <span className={`transition-transform ${showMore ? "rotate-180" : ""}`}>▾</span>
+          </button>
+          {showMore && (
+            <div className="mt-2 overflow-hidden rounded-lg border border-slate-200">
+              <div className="border-b border-slate-100 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-500">
+                {t("cmp.moreTitle")}
+              </div>
+              <table className="w-full text-sm">
+                <tbody className="divide-y divide-slate-100">
+                  {extras.map((e, i) => {
+                    const tr = e.key ? t(e.key) : "";
+                    const label = tr && tr !== e.key ? tr : e.label; // 有翻译用翻译，否则回退原表头
+                    return (
+                      <tr key={i} className="align-top">
+                        <td className="w-1/3 min-w-[160px] bg-slate-50/60 px-3 py-2 text-xs text-slate-500">{label}</td>
+                        <td className="break-words px-3 py-2 text-slate-800">{e.value}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
