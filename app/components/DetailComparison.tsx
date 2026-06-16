@@ -38,6 +38,8 @@ export default function DetailComparison({ data }: { data: any }) {
     attendees: [{ name: r.attendeeName, title: r.attendeeTitle, sub: r.companyAttendee, isSensitive: r.isSensitive, reasons: r.reasons || [] }],
   }));
   const concurCols = reports.length > 0 ? reports : [null];
+  const reportIdCount = new Set(concurRows.map((r: any) => r.reportId).filter(Boolean)).size; // 报销单数(按 Report ID 去重)
+  const recordCount = concurRows.length; // 关联到该 ECO 的记录数
 
   const officials = hasOact
     ? (oact.officials || []).map((o: any) => ({ name: o.name, title: o.title, sub: o.entity, isSensitive: o.isSensitive, reasons: o.reasons || [] }))
@@ -52,7 +54,6 @@ export default function DetailComparison({ data }: { data: any }) {
   }
 
   const fieldRows: { label: string; oact: React.ReactNode; report: (r: any) => React.ReactNode; mono?: boolean }[] = [
-    { label: t("cmp.id"), oact: oact?.econumber, report: () => econumber, mono: true },
     { label: t("cmp.person"), oact: <PersonCell name={oact?.requestorName} email={oact?.requestorEmail} />, report: (r) => <PersonCell name={r.employee} email={r.employeeEmail} /> },
     { label: t("cmp.title"), oact: oact?.requestorJobTitle, report: (r) => r.employeeTitle },
     { label: t("cmp.dept"), oact: oact?.requestorDepartment, report: () => null },
@@ -93,7 +94,8 @@ export default function DetailComparison({ data }: { data: any }) {
             ) : (
               <Badge c="slate" sm>{t("d.unmatched")}</Badge>
             )}
-            {reports.length > 1 && <Badge c="blue" sm>{t("col.reportsN", { n: reports.length })}</Badge>}
+            {hasConcur && <Badge c="blue" sm>{t("col.reportsN", { n: reportIdCount })}</Badge>}
+            {hasConcur && <Badge c="slate" sm>{t("col.recordsN", { n: recordCount })}</Badge>}
             {aggregate.sensitive && <Badge c="red" sm>{t("d.sensPerson")}</Badge>}
           </div>
         </div>
@@ -124,11 +126,22 @@ export default function DetailComparison({ data }: { data: any }) {
           <thead className="text-left text-xs">
             <tr className="divide-x divide-slate-300">
               <th className={`${fieldTh} font-medium text-slate-500`}>{t("cmp.field")}</th>
-              <th className={oactTh}>{t("cmp.colOact")}</th>
+              <th className={oactTh}>
+                <div>{t("cmp.colOact")}</div>
+                {hasOact && (
+                  <div className="text-[11px] font-normal text-slate-400">
+                    {t("kv.econumber")}: <span className="font-mono text-slate-600">{oact.econumber}</span>
+                  </div>
+                )}
+              </th>
               {concurCols.map((rep: any, i: number) => (
                 <th key={i} className="min-w-[180px] bg-emerald-50 px-3 py-2 font-semibold text-emerald-700">
                   <div>{reports.length > 1 ? t("cmp.reportCol", { n: i + 1 }) : t("cmp.colConcur")}</div>
-                  {rep && <div className="font-mono text-[11px] font-normal text-slate-500">{rep.reportId}</div>}
+                  {rep && (
+                    <div className="text-[11px] font-normal text-slate-400">
+                      {t("cmp.reportId")}: <span className="font-mono text-slate-600">{rep.reportId}</span>
+                    </div>
+                  )}
                 </th>
               ))}
             </tr>
