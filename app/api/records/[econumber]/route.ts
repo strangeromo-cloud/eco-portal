@@ -7,9 +7,9 @@ export const runtime = "nodejs";
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { econumber: string } }
+  { params }: { params: Promise<{ econumber: string }> }
 ) {
-  const econumber = decodeURIComponent(params.econumber);
+  const econumber = decodeURIComponent((await params).econumber);
 
   const oact = await prisma.oactRecord.findUnique({
     where: { econumber },

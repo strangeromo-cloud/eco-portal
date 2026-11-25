@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import DetailComparison from "../../components/DetailComparison";
 import { useT } from "../../components/I18nProvider";
@@ -8,9 +8,9 @@ import { useT } from "../../components/I18nProvider";
 export default function DetailPage({
   params,
 }: {
-  params: { econumber: string };
+  params: Promise<{ econumber: string }>;
 }) {
-  const { econumber } = params;
+  const { econumber } = use(params);
   const { t } = useT();
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
