@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { fmtUsd, fmtDate } from "@/lib/format";
 import { useT } from "./components/I18nProvider";
 import DetailDrawer from "./components/DetailDrawer";
+import DateFilter from "./components/DateFilter";
 
 type Reason = { keyword: string; field: string; category: string };
 type Item = {
@@ -97,12 +98,8 @@ export default function ListPage() {
             placeholder={t("f.searchPh")}
           />
         </Field>
-        <Field label={t("f.dateFrom")}>
-          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="input" />
-        </Field>
-        <Field label={t("f.dateTo")}>
-          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="input" />
-        </Field>
+        <DateFilter label={t("f.dateFrom")} value={from} onChange={setFrom} />
+        <DateFilter label={t("f.dateTo")} value={to} onChange={setTo} />
         <Field label={t("f.type")}>
           <select value={type} onChange={(e) => setType(e.target.value)} className="input">
             <option value="">{t("opt.all")}</option>

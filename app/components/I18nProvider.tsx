@@ -25,12 +25,15 @@ export default function I18nProvider({
     if (saved === "en" || saved === "zh") setLangState(saved);
   }, []);
 
+  useEffect(() => {
+    document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+  }, [lang]);
+
   function setLang(l: Lang) {
     setLangState(l);
     try {
       localStorage.setItem(STORAGE_KEY, l);
     } catch {}
-    document.documentElement.lang = l === "zh" ? "zh-CN" : "en";
   }
 
   const t = (key: string, vars?: Record<string, string | number>) =>
