@@ -10,6 +10,14 @@
 - `prisma` CLI 已移到 `dependencies`，保证运行时能执行迁移。
 - `.gitignore`：排除样例大文件（含 10MB 的 `13 Legal Report.xlsx`），**保留** `Key Words List V7 20240626.ods`（seed 用）。
 
+## npm 12 安装兼容
+
+Zeabur 构建时可能自动升级 npm。npm 12 默认禁止远程 URL 依赖，并限制依赖安装脚本：
+
+- 项目 `.npmrc` 设置 `allow-remote=root`，允许 `package.json` 直接声明的 SheetJS 官方压缩包地址。
+- `package.json` 的 `allowScripts` 按版本列出 Prisma、esbuild 和 fsevents 的安装脚本许可；升级这些依赖时需同步检查许可版本。
+- 保留 `package-lock.json` 中的包版本和完整性校验，并随依赖配置一起提交。
+
 ## 一、推送代码到 Git
 
 当前目录还不是 git 仓库，先初始化并推到 GitHub（Zeabur 从 Git 部署）：
